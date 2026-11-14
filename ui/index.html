@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111510">
+  <meta name="description" content="Planera raids och dungeons med Chipstuttarna.">
+  <title>Chipstuttarna | Speltillfällen</title>
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Hoppa till innehållet</a>
+  <div class="layout">
+    <aside class="sidebar" aria-label="Huvudmeny">
+      <a class="brand" href="#events"><img src="/icon.svg" alt=""><span>Chipstuttarna<small>WORLD OF WARCRAFT · FOREVER</small></span></a>
+      <nav id="nav"></nav>
+      <div id="identity" class="identity"></div>
+    </aside>
+    <div class="surface">
+      <header class="top"><div><span class="live"></span><span id="top-title">Guildens spelplanering</span></div><div id="mode"></div></header>
+      <main id="main" tabindex="-1"><p class="loading">Laddar spelplaneringen…</p></main>
+    </div>
+  </div>
+  <dialog id="dialog" aria-labelledby="dialog-title"></dialog>
+  <div id="notice" role="status" aria-live="polite"></div>
+</body>
+</html>

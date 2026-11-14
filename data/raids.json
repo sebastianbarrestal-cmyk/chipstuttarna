@@ -1,0 +1,50 @@
+[
+  {
+    "id": "barrow-deeps", "name": "Barrow Deeps", "size": 10,
+    "bosses": ["Chillhowl","Elder Tangleclaw","Khalith the Dreadspinner","Well of Sorrow","Amethrax","Del'lynar Songwood","Ravus and Darlissa","Sonya Darkhallow"],
+    "source": "https://undying.app/raids/barrow-deeps",
+    "items": [
+      {"name":"Corrupted Chillhowl Shard","boss":"Chillhowl","itemId":277172},
+      {"name":"Corrupted Tangleclaw Shard","boss":"Elder Tangleclaw","itemId":277175},
+      {"name":"Corrupted Dreadspinner Shard","boss":"Khalith the Dreadspinner","itemId":277174},
+      {"name":"Corrupted Amethrax Shard","boss":"Amethrax","itemId":277179},
+      {"name":"Sonya Darkhallow's Gold Coin","boss":"Sonya Darkhallow","itemId":286300}
+    ]
+  },
+  {
+    "id": "hyjal-summit", "name": "Hyjal Summit", "size": 20,
+    "bosses": ["Bandalar","Ancient of Decay","Time-Lost Battalion","Sylvestris Dusksong","Old Gloomlurker","Gharalis the Abyssal","Kathris the Haunted","Anara Chillwind","Elder Minderel","Tracker Stillwind","Council of Thorns","Nythus the Dreambound","The Wild King"],
+    "source": "https://undying.app/raids/hyjal-summit",
+    "items": [
+      {"name":"Stillwind String","boss":"Tracker Stillwind","itemId":254679},
+      {"name":"Token of the Wild King","boss":"The Wild King","itemId":268967}
+    ]
+  },
+  {
+    "id": "onyxias-lair", "name": "Onyxia’s Lair", "size": 40, "bosses": ["Onyxia"],
+    "source": "https://legacyofwarcraft.com/guide-classic-onyxias-lair.html",
+    "extraSource": "https://warcraft.wiki.gg/wiki/Onyxia%27s_Lair_loot_%28Classic%29",
+    "items": [
+      {"name":"Ancient Cornerstone Grimoire","rarity":"epic","classicChance":25},
+      {"name":"Bloodfang Hood","rarity":"epic","classicChance":14},
+      {"name":"Deathbringer","rarity":"epic","classicChance":8},
+      {"name":"Dragonstalker's Helm","rarity":"epic","classicChance":14},
+      {"name":"Eskhandar's Collar","rarity":"epic","classicChance":25},
+      {"name":"Halo of Transcendence","rarity":"epic","classicChance":14},
+      {"name":"Head of Onyxia"},
+      {"name":"Helmet of Ten Storms","rarity":"epic"},
+      {"name":"Helm of Wrath","rarity":"epic","classicChance":14},
+      {"name":"Judgment Crown","rarity":"epic"},
+      {"name":"Mature Black Dragon Sinew"},
+      {"name":"Nemesis Skullcap","rarity":"epic","classicChance":14},
+      {"name":"Netherwind Crown","rarity":"epic","classicChance":14},
+      {"name":"Onyxia Hide Backpack","rarity":"rare","classicChance":100},
+      {"name":"Ring of Binding","rarity":"epic","classicChance":25},
+      {"name":"Sapphiron Drape","rarity":"epic","classicChance":25},
+      {"name":"Shard of the Scale","rarity":"epic","classicChance":8},
+      {"name":"Stormrage Cover","rarity":"epic","classicChance":14},
+      {"name":"Vis'kag the Bloodletter","rarity":"epic","classicChance":8},
+      {"name":"Draconic for Dummies"}
+    ]
+  }
+]
