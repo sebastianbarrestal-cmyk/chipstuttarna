@@ -1,1 +1,10 @@
-{"name":"chipstuttarna","private":true,"type":"module","scripts":{"build":"node scripts/build.mjs","test":"node --test"}}
+{
+  "name": "chipstuttarna",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "npm run build && node --test",
+    "start": "node server/index.js"
+  }
+}

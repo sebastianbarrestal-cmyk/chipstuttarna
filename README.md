@@ -14,13 +14,43 @@ Guildsida för WoW Forever med bokningar för raids, dungeons och PvP, karaktär
 | `worker/events.js`, `worker/characters.js`, `worker/statistics.js`, `worker/polls.js` | Serverlogik per funktion |
 | `worker/accounts.js`, `worker/identity.js`, `worker/registration.js`, `worker/admin.js` | Konton, identitet, registreringsregler och administration |
 | `worker/armory.js`, `worker/raid-drops.js` | Anslutningar för Armory och droppdata |
-| `drizzle/` | D1-migreringar i nummerordning |
+| `drizzle/` | Delade migreringar för SQLite och D1 |
+| `server/` | Node.js-server, HTTP och SQLite för hemservern |
+| `compose.yaml`, `Dockerfile`, `Caddyfile` | Containerbygge, databasvolym och HTTPS |
 
 Bygget använder Node.js 24 och inga installerade npm-beroenden. Det kopierar servermodulerna och paketerar klientens ES-moduler som resurser. `dist/` genereras och behöver inte checkas in.
 
 ```sh
 npm run build
 ```
+
+## Hemserver med Docker Compose
+
+Docker Compose startar guildsidan och Caddy, som ordnar HTTPS. SQLite körs inuti appen och sparar data i Docker-volymen `guild_data`. Appens egen port exponeras bara i Docker-nätverket.
+
+1. Installera Docker med Compose och packa upp koden på hemservern.
+2. För åtkomst från internet, peka domänens DNS till din publika IP-adress och vidarebefordra TCP-port 80 och 443 från routern till servern. Det behövs för att Caddy ska kunna ordna HTTPS med den här konfigurationen.
+3. Kör `cp .env.example .env` och öppna `.env`. Ange domännamnet i `GUILD_DOMAIN`, utan `https://`. Fyll i din e-postadress som `GUILD_OWNER_EMAIL` och skapa `GUILD_IDENTITY_KEY` med exempelvis `openssl rand -hex 32`.
+4. Fyll i `RESEND_API_KEY` och `GUILD_FROM_EMAIL` med en avsändaradress på en verifierad domän i Resend. Det används för verifieringsmejl och lösenordsåterställning. Battle.net-nycklarna är valfria.
+5. Starta tjänsterna från projektmappen.
+
+```sh
+docker compose up -d --build
+```
+
+Öppna domänen med HTTPS och registrera ett konto med ägaradressen. När mejlet är verifierat kan du logga in som ägare. Databasen skapas och uppgraderas automatiskt vid start. Installation på hemservern börjar med en tom databas. Konton, speltillfällen och omröstningar från den publicerade sajten följer inte med källkoden.
+
+Kör samma startkommando när du uppdaterat koden. Behåll `.env` och använd samma Compose-projekt vid uppdateringar så att tjänsten hittar sin befintliga volym. Se status med `docker compose ps` och loggar med `docker compose logs app caddy`.
+
+För att säkerhetskopiera databasen, stoppa appen medan hela datavolymen kopieras. Spara även en separat skyddad kopia av `.env` så att du behåller samma identitetsnyckel.
+
+```sh
+docker compose stop app
+docker compose run --rm --no-deps -T app tar -C /data -czf - . > ../chipstuttarna-db-backup.tar.gz
+docker compose start app
+```
+
+Om du redan har en HTTPS-proxy kan du även köra appen direkt med Node.js 24. Sätt samma miljövariabler som i tabellen nedan, inklusive `GUILD_PUBLIC_ORIGIN`, och kör `npm run build` följt av `npm start`. Servern lyssnar som standard på `127.0.0.1:3000` och använder `storage/chipstuttarna.sqlite`. De kan ändras med `HOST`, `PORT` och `GUILD_DATABASE_PATH`.
 
 ## Cloudflare Workers och D1
 
@@ -49,4 +79,12 @@ Den exporterade källkoden innehåller varken den publicerade sidans databas ell
 
 ## GitHub
 
-Packa upp källkoden och ladda upp innehållet som roten i ett nytt repo. Fyll i lokala konfigurationsfiler efter uppladdningen. Håll API-nycklar, hemligheter och databaser utanför repot.
+### Uppdatera ett befintligt repo med GitHub Desktop
+
+1. Välj **File → Clone repository** i GitHub Desktop och klona `sebastianbarrestal-cmyk/chipstuttarna`. Om du redan har klonat repot, välj det och hämta senaste versionen med **Fetch origin** och vid behov **Pull origin**.
+2. Packa upp ZIP-filen separat. Kopiera innehållet i den uppackade mappen `Chipstuttarna` till den klonade mappen. Välj att skriva över filer med samma namn. `compose.yaml` och `README.md` ska ligga direkt i repots rot.
+3. Om du tidigare laddade upp själva ZIP-filen eller en extra omslagsmapp med den gamla källkoden, ta bort den gamla ZIP-filen eller omslagsmappen från den klonade mappen.
+4. Granska ändringarna i GitHub Desktop. Skriv exempelvis `Lägg till stöd för hemserver`, välj **Commit to main** och sedan **Push origin**.
+5. Öppna repot på GitHub och kontrollera att `compose.yaml`, `Dockerfile`, `Caddyfile` och mappen `server` syns.
+
+Detta behåller repo-adressen och den tidigare versionen i Git-historiken. Ladda upp mallfilen `.env.example` och fyll i den riktiga `.env` på hemservern. Förvara databasen och säkerhetskopior utanför repot.
