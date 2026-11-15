@@ -1,5 +1,5 @@
 import { $, main, dialog, icon, e, roleName, btn, field, initials, api, toast, show, form, submit, input, select } from './components.js'
-import { state, demo, nativeLogin, registrationMode, adminData, pollsData, officerData, officerPollResults, officerSection, priorityItem,
+import { state, demo, nativeLogin, registrationMode, adminData, adminSection, pollsData, officerData, officerPollResults, officerSection, priorityItem,
   setState, setDemo, setAuthConfig, setAdminData, setPollsData, setOfficerData, setOfficerPollResults, setFilter, setAdminSection,
   setAccountSearch, setOfficerSection, setOfficerHistory, setOpenRaid, officer, administrator, activeTab } from './model.js'
 import { eventsPage, hero, details, eventForm, updateRolePreview, attendanceForm, findEvent, upcoming, ownSignup, stockholmTime } from './events.js'
@@ -7,7 +7,7 @@ import { charactersPage, characterForm, showAccountStats, showCharacterStats, sy
 import { adminPage, membersPage, memberRows, canManageMember, displayedAccounts, manageMember, officialSettingsForm, registrationLabels } from './admin.js'
 import { pollForm, pollsPage, officerPollArchive } from './polls.js'
 import { officersPage, raidLootCatalog, raidLootRanking } from './officers.js'
-import { accountForm, showAccountLink } from './auth.js'
+import { accountForm, discordButton, showAccountLink, showDiscordLoginResult } from './auth.js'
 
 const tabs = {events:['Speltillfällen','calendar'],characters:['Mina karaktärer','sword'],members:['Guilden','users'],polls:['Omröstningar','chart'],officers:['Officerare','chart'],admin:['Admin','shield']}
 let renderVersion = 0
@@ -34,10 +34,11 @@ async function render() {
     const signIn = '/signin-with-chatgpt?return_to=%2F'
     if (state.status === 401) {
       main.innerHTML = nativeLogin
-        ? hero(btn('Logga in','auth-login','primary') + ' ' + btn('Skapa konto','auth-register')) +
+        ? hero(btn('Logga in','auth-login','primary') + btn('Skapa konto','auth-register') +
+          discordButton(), { signIn: true }) +
           '<section class="card onboard"><h3>Gå med i Chipstuttarna</h3><p>' + (registrationMode === 'invite' ? 'En inbjuden e-postadress behövs för nya konton.' : registrationMode === 'paused' ? 'Nyregistrering är pausad. Befintliga medlemmar kan logga in.' : 'Skapa ett konto och verifiera din e-postadress.') + '</p></section>'
         : hero('<a class="btn primary" href="' + signIn + '" target="_top">Logga in</a> ' +
-          '<a class="btn" href="' + signIn + '" target="_top">Skapa konto</a>') +
+          '<a class="btn" href="' + signIn + '" target="_top">Skapa konto</a>', { signIn: true }) +
           '<section class="card onboard"><h3>Gå med i Chipstuttarna</h3><p>Verifieringsmejl är ännu inte anslutna. ChatGPT-inloggning är tillgänglig under tiden.</p></section>'
     } else if (state.status === 403) {
       main.innerHTML = hero(nativeLogin ? btn('Logga ut','auth-logout') :
@@ -75,7 +76,9 @@ async function render() {
   }
   if (tab === 'admin') {
     try {
-      const data = await api('admin')
+      const data = adminSection === 'integrations'
+        ? { integrations: await api('admin/integrations') }
+        : await api('admin')
       if (version !== renderVersion) return
       setAdminData(data)
     } catch (error) {
@@ -95,6 +98,14 @@ async function render() {
   }
   const pages = {events:eventsPage,characters:charactersPage,members:membersPage,officers:officersPage,admin:adminPage,polls:pollsPage}
   main.innerHTML = (demo ? '<div class="banner"><span>Exempeldata för att visa hur guildsidan ser ut.</span></div>' : '') + pages[tab]()
+  if (tab === 'events' && state.user && !demo) {
+    const id = /^#events\/([a-f0-9-]{36})$/.exec(location.hash)?.[1]
+    if (id) {
+      const event = findEvent(id)
+      if (event) details(event)
+      else toast('Speltillfället finns inte.')
+    }
+  }
   if (tab === 'characters' && !demo) {
     syncVisibleArmory()
     void showAccountStats()
@@ -258,6 +269,21 @@ document.addEventListener('submit', async event => {
   button.disabled = true
   errorField.hidden = true
   try {
+    if (kind === 'integration-test') {
+      const result = element.querySelector('[data-integration-result]')
+      result.hidden = true
+      const { message } = await api('admin/integration-test',{id,character:data.character})
+      result.textContent = message
+      result.hidden = false
+      return
+    }
+    if (kind === 'integration-save') {
+      const {enabled,revision,...values} = data
+      await api('admin/integrations',{id,enabled:enabled === '1',revision:Number(revision),values})
+      await render()
+      toast('Inställningarna sparades')
+      return
+    }
     if (id) data.id = id
     if (kind === 'event') {
       data.capacity = Number(data.capacity)
@@ -323,3 +349,4 @@ try {
 } catch {}
 await load()
 showAccountLink()
+showDiscordLoginResult()

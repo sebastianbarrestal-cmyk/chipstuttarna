@@ -1,4 +1,5 @@
 import { e, initials, icon, roleName, fullDate, btn, field, input, select, form, submit, show } from './components.js'
+import { integrationsPage } from './integrations.js'
 import { state, demo, administrator, adminData, adminSection, accountSearch } from './model.js'
 
 function canManageMember(member) {
@@ -23,16 +24,17 @@ function membersPage() {
     '</div><section class="card member-table">' + memberRows(members) + '</section>'
 }
 
-const adminSections = {accounts:'Konton',registration:'Registrering',official:'Officiella tillfällen',history:'Historik'}
+const adminSections = {accounts:'Konton',registration:'Registrering',official:'Officiella tillfällen',integrations:'Integrationer',history:'Historik'}
 const registrationLabels = {open:'Öppen',invite:'Endast inbjudna',paused:'Pausad'}
 const activityLabels = {role:'Ändrade roll',account_status:'Ändrade kontostatus',password_reset:'Skickade lösenordsåterställning',
-  registration_mode:'Ändrade registreringsläge',email_add:'Lade till e-postadress',email_remove:'Tog bort e-postadress',official_settings:'Ändrade regler för officiella tillfällen'}
+  registration_mode:'Ändrade registreringsläge',email_add:'Lade till e-postadress',email_remove:'Tog bort e-postadress',official_settings:'Ändrade regler för officiella tillfällen',integration_settings:'Ändrade integration'}
 
 function auditDetail(entry) {
   if (entry.action === 'role') return roleName[entry.detail]
   if (entry.action === 'account_status') return {active:'Aktivt',blocked:'Blockerat',removed:'Borttaget'}[entry.detail]
   if (entry.action === 'registration_mode') return registrationLabels[entry.detail]
   if (entry.action.startsWith('email_')) return entry.detail === 'blocked' ? 'Spärrlista' : 'Inbjudningslista'
+  if (entry.action === 'integration_settings') return entry.detail
   if (entry.action === 'official_settings') {
     const settings = JSON.parse(entry.detail)
     return settings.label + ' · ' + (settings.pin_first ? 'Visas först' : 'Efter starttid') +
@@ -51,6 +53,7 @@ function adminPage() {
   const header = '<div class="page-head"><div><h1>Admin</h1></div></div><nav class="filters officer-nav" aria-label="Adminvyer">' +
     Object.entries(adminSections).map(([id,label]) => '<button type="button" class="filter" aria-pressed="' +
       (id === adminSection) + '" data-action="admin-section/'+id+'">' + label + '</button>').join('') + '</nav>'
+  if (adminSection === 'integrations') return header + integrationsPage(adminData.integrations)
   if (adminSection === 'accounts') return header +
     '<section class="card member-table"><h3>Konton</h3>' +
     (!adminData.mail_ready ? '<p>Återställningsmejl blir tillgängliga när mejltjänsten är ansluten.</p>' : '') +

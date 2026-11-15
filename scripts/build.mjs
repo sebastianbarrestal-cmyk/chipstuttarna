@@ -6,20 +6,19 @@ await mkdir('dist/.openai', { recursive: true })
 const files = {
   '/': ['ui/index.html', 'text/html; charset=utf-8'],
   '/style.css': ['ui/style.css', 'text/css; charset=utf-8'],
-  '/icon.svg': ['ui/icon.svg', 'image/svg+xml'],
-  '/camp.webp': ['assets/camp.webp', 'image/webp'],
+  '/guild-icon.png': ['assets/guild-icon.png', 'image/png'],
+  '/guild-mark.webp': ['assets/guild-mark.webp', 'image/webp'],
+  '/guild-logo.webp': ['assets/guild-logo.webp', 'image/webp'],
+  '/choppergang.webp': ['assets/choppergang.webp', 'image/webp'],
 }
 for (const name of await readdir('ui')) {
   if (name.endsWith('.js')) files['/' + name] = ['ui/' + name, 'text/javascript; charset=utf-8']
 }
 const assets = {}
 for (const [url, [file, type]] of Object.entries(files)) {
-  try {
-    const bytes = await readFile(file)
-    assets[url] = { type, body: type.startsWith('text/') || type === 'image/svg+xml' ? bytes.toString() : bytes.toString('base64'), binary: !type.startsWith('text/') && type !== 'image/svg+xml' }
-  } catch (error) {
-    if (url !== '/camp.webp' || error.code !== 'ENOENT') throw error
-  }
+  const bytes = await readFile(file)
+  const binary = !type.startsWith('text/')
+  assets[url] = { type, body: binary ? bytes.toString('base64') : bytes.toString(), binary }
 }
 const raidCatalog = JSON.parse(await readFile('data/raids.json', 'utf8'))
 for (const name of await readdir('worker')) {

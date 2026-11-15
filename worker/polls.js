@@ -1,4 +1,6 @@
 import { json, bounded, requireValue } from './http.js'
+import { discordBot } from './discord-api.js'
+import { queueDiscordNotice } from './discord-notices.js'
 import { editorRoles } from './roles.js'
 
 const pollHasNoVotes = 'NOT EXISTS (SELECT 1 FROM guild_poll_votes WHERE poll_id=p.id)'
@@ -45,7 +47,7 @@ async function readPolls(db,member,closedOnly = false, before = null) {
   })})
 }
 
-async function changePoll(db,member,body,path) {
+async function changePoll(db,member,body,path,env) {
   if (path === '/api/poll-vote') {
     const index = body.option
     const revision = body.revision ?? 0
@@ -104,6 +106,7 @@ async function changePoll(db,member,body,path) {
       SELECT ?,?,?,?,id,?,? FROM members WHERE id=? AND ${activeOfficer}
       AND ${validAudience}`)
       .bind(pollId,question,description,JSON.stringify(options),Date.now(),Number(restricted),member.id,Number(restricted),invited),
+    ...(env && discordBot(env) && !restricted ? [queueDiscordNotice(db,'poll',pollId)] : []),
     db.prepare(`INSERT INTO guild_poll_invites(poll_id,member_id)
       SELECT p.id,j.value FROM guild_polls p CROSS JOIN json_each(?) j WHERE p.id=? AND p.restricted=1`).bind(invited,pollId),
   ])

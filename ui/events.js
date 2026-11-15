@@ -37,8 +37,14 @@ const demoEvents = [
   signups:i === 0 ? [{member_id:'example',member_name:'Exempelspelare',role:'Tank',status:'yes',booked:true}] : [],
 }))
 
-function hero(action) {
-  return '<section class="hero"><div class="hero-content"><div class="eyebrow">' + icon('sword') + ' Chipstuttarna</div><h1>Speltillfällen</h1><p>Planera raids, dungeons och PvP och se vilka som hänger på.</p>' + action + '</div></section>'
+function hero(action, { signIn = false } = {}) {
+  const heading = signIn ? 'Logga in' : 'Speltillfällen'
+  const art = signIn
+    ? '<img src="/guild-logo.webp" alt="Chipstuttarnas klubbmärke" width="560" height="512">'
+    : '<img src="/choppergang.webp" alt="" width="1360" height="766">'
+  return '<section class="hero' + (signIn ? ' hero-signin' : '') + '"><div class="hero-content">' +
+    '<h1>' + heading + '</h1><p>Planera raids, dungeons och PvP och se vilka som hänger på.</p>' +
+    '<div class="hero-actions">' + action + '</div></div><div class="hero-art">' + art + '</div></section>'
 }
 
 function eventCard(event) {

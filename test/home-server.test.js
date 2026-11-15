@@ -69,7 +69,7 @@ test('home server verifies a guild account and keeps data across restarts', asyn
 
   instance = await start()
   assert.equal((await instance.get('/')).status, 200)
-  assert.deepEqual(await (await instance.get('/api/auth/config')).json(), { native: true, mode: 'open' })
+  assert.deepEqual(await (await instance.get('/api/auth/config')).json(), { native: true, discord: false, mode: 'open' })
   assert.equal((await instance.get('/api/admin', { 'oai-authenticated-user-email': email })).status, 401)
   const password = 'test-password-with-12-chars'
   const registration = { email, username: 'Barrebus', password }

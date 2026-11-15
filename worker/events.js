@@ -1,5 +1,7 @@
 import { json, bounded, requireValue } from './http.js'
 import { roles, editorRoles, adminRoles } from './roles.js'
+import { discordBot } from './discord-api.js'
+import { queueDiscordNotice } from './discord-notices.js'
 import { parseArmoryUrl } from './armory-links.js'
 
 const expectedSignups = `SELECT s.member_id AS id, m.name, c.name AS character_name
@@ -8,7 +10,13 @@ const expectedSignups = `SELECT s.member_id AS id, m.name, c.name AS character_n
   WHERE b.event_id = ?
   ORDER BY s.joined_at, s.member_id`
 
-async function changeEvent(db,member,body,path) {
+async function eventWrite(db, statement, kind, id, env) {
+  if (!env || !discordBot(env)) return statement.run()
+  const [result] = await db.batch([statement, queueDiscordNotice(db,kind,id)])
+  return result
+}
+
+async function changeEvent(db,member,body,path,env) {
   const id = member.id
   if (path === '/api/event') {
     const title = bounded(body.title, 70)
@@ -35,11 +43,17 @@ async function changeEvent(db,member,body,path) {
         .bind(title, description, storageKind, isPvp, body.starts_at, body.capacity, tankSlots, healerSlots, official, body.id, Date.now(), id, Number(officer)).run()
       requireValue(result.meta.changes, 'Speltillfället kan inte längre ändras.', 409)
     } else {
-      await db.prepare('INSERT INTO events (id, title, description, kind, is_pvp, starts_at, capacity, tank_slots, healer_slots, official, created_by) SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, id FROM members WHERE id=? AND status=\'active\'')
-        .bind(crypto.randomUUID(), title, description, storageKind, isPvp, body.starts_at, body.capacity, tankSlots, healerSlots, official ?? 0, id).run()
+      const eventId = crypto.randomUUID()
+      const statement = db.prepare(`INSERT INTO events (id, title, description, kind, is_pvp, starts_at, capacity, tank_slots, healer_slots, official, created_by)
+        SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, id FROM members WHERE id=? AND status='active'`)
+        .bind(eventId, title, description, storageKind, isPvp, body.starts_at, body.capacity, tankSlots, healerSlots, official ?? 0, id)
+      await eventWrite(db,statement,'event',eventId,env)
     }
   } else if (path === '/api/cancel') {
-    const result = await db.prepare('UPDATE events SET canceled = 1 WHERE id = ? AND canceled = 0 AND (created_by=? OR ?)').bind(body.id ?? '', id, Number(editorRoles.includes(member.role))).run()
+    const eventId = bounded(body.id,64)
+    const statement = db.prepare('UPDATE events SET canceled = 1 WHERE id = ? AND canceled = 0 AND (created_by=? OR ?)')
+      .bind(eventId, id, Number(editorRoles.includes(member.role)))
+    const result = await eventWrite(db,statement,'cancel',eventId,env)
     requireValue(result.meta.changes, 'Speltillfället kan inte längre ställas in.', 409)
   } else if (path === '/api/signup') {
     requireValue(['yes', 'maybe', 'no'].includes(body.status), 'Välj ditt svar.')

@@ -1,6 +1,7 @@
 let state
 let demo = false
 let nativeLogin = false
+let discordLogin = false
 let registrationMode = 'open'
 let adminData
 let pollsData = []
@@ -16,7 +17,7 @@ let priorityItem
 
 const setState = value => { state = value }
 const setDemo = value => { demo = value }
-const setAuthConfig = config => { nativeLogin = config.native; registrationMode = config.mode }
+const setAuthConfig = config => { nativeLogin = config.native; discordLogin = config.discord === true; registrationMode = config.mode }
 const setAdminData = value => { adminData = value }
 const setPollsData = value => { pollsData = value }
 const setOfficerData = value => { officerData = value }
@@ -35,4 +36,4 @@ const administrator = () => ['owner','admin'].includes(state?.user?.role)
 const canPublishOfficial = () => administrator() || (officer() && state.officialSettings?.creator_role !== 'admin')
 const activeTab = () => location.hash.slice(1).split('/')[0] || 'events'
 
-export { state, demo, nativeLogin, registrationMode, adminData, pollsData, officerData, officerPollResults, filter, adminSection, accountSearch, officerSection, officerHistory, openRaid, priorityItem, setState, setDemo, setAuthConfig, setAdminData, setPollsData, setOfficerData, setOfficerPollResults, setFilter, setAdminSection, setAccountSearch, setOfficerSection, setOfficerHistory, setOpenRaid, setPriorityItem, officer, administrator, canManageEvent, canPublishOfficial, activeTab }
+export { state, demo, nativeLogin, discordLogin, registrationMode, adminData, pollsData, officerData, officerPollResults, filter, adminSection, accountSearch, officerSection, officerHistory, openRaid, priorityItem, setState, setDemo, setAuthConfig, setAdminData, setPollsData, setOfficerData, setOfficerPollResults, setFilter, setAdminSection, setAccountSearch, setOfficerSection, setOfficerHistory, setOpenRaid, setPriorityItem, officer, administrator, canManageEvent, canPublishOfficial, activeTab }

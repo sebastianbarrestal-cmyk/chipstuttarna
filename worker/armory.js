@@ -116,10 +116,10 @@ function hasBattleNetCredentials(env) {
 }
 
 async function getBattleNetToken(env) {
-  const cacheKey = env.BATTLENET_CLIENT_ID
+  const cacheKey = env.BATTLENET_CLIENT_ID + ':' + env.BATTLENET_CLIENT_SECRET
   if (battleNetToken?.key === cacheKey && battleNetToken.expiresAt > Date.now() + 60000) return battleNetToken.value
-  if (battleNetTokenRequest) return battleNetTokenRequest
-  battleNetTokenRequest = (async () => {
+  if (battleNetTokenRequest?.key === cacheKey) return battleNetTokenRequest.promise
+  const promise = (async () => {
     const authorization = 'Basic ' + btoa(env.BATTLENET_CLIENT_ID + ':' + env.BATTLENET_CLIENT_SECRET)
     const response = await fetch('https://oauth.battle.net/token', {
       method:'POST', redirect:'error', signal:AbortSignal.timeout(7000),
@@ -133,8 +133,11 @@ async function getBattleNetToken(env) {
     if (typeof body.access_token !== 'string' || !body.access_token || !Number.isFinite(body.expires_in)) throw armoryFailure('api_auth')
     battleNetToken = { key:cacheKey, value:body.access_token, expiresAt:Date.now() + body.expires_in * 1000 }
     return battleNetToken.value
-  })().finally(() => { battleNetTokenRequest = null })
-  return battleNetTokenRequest
+  })().finally(() => {
+    if (battleNetTokenRequest?.promise === promise) battleNetTokenRequest = null
+  })
+  battleNetTokenRequest = {key:cacheKey, promise}
+  return promise
 }
 
 async function fetchBattleNetEquipment(env, armoryUrl) {
@@ -177,13 +180,13 @@ async function syncArmory(db, env, character, manual) {
   const url = parseArmoryUrl(character.armory_url)
   if (!url) return armoryDetails(null)
   const useApi = hasBattleNetCredentials(env)
-  const key = character.id + ':' + url
+  const key = JSON.stringify([character.id,url,env.BATTLENET_CLIENT_ID,env.BATTLENET_CLIENT_SECRET])
   if (armoryRequests.has(key)) return armoryRequests.get(key)
   const operation = (async () => {
     const saved = await db.prepare('SELECT * FROM armory_equipment WHERE character_id=? AND armory_url=?')
       .bind(character.id, character.armory_url).first()
     const now = Date.now()
-    if (saved && (!useApi || !['api_setup_required','web_unavailable','unavailable','format'].includes(saved.status)) && now - saved.checked_at < (manual ? armoryManualAge : armoryRefreshAge)) return armoryDetails(saved)
+    if (saved && (!useApi || !['api_setup_required','api_auth','web_unavailable','unavailable','format'].includes(saved.status)) && now - saved.checked_at < (manual ? armoryManualAge : armoryRefreshAge)) return armoryDetails(saved)
     const row = { ...saved, status:'ok', checked_at: now }
     try {
       const current = await (useApi ? fetchBattleNetEquipment(env,url) : fetchPublicArmoryEquipment(url))
@@ -213,4 +216,4 @@ async function syncArmory(db, env, character, manual) {
   return operation
 }
 
-export { syncArmory }
+export { syncArmory, hasBattleNetCredentials, fetchBattleNetEquipment }

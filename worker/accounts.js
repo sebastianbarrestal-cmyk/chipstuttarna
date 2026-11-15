@@ -2,11 +2,10 @@ import { scrypt, timingSafeEqual } from 'node:crypto'
 import { json, bounded, requireValue, requestJson } from './http.js'
 import { guildMemberId } from './identity.js'
 import { hex, randomToken, digest } from './tokens.js'
+import { cookieToken, sessionHeader, sessionLifetime } from './sessions.js'
 import { registrationArgs, registrationGuard, mayRegister } from './registration.js'
 
 const defaultGuildOrigin = 'https://chipstuttarna.sebastian-barrestal.chatgpt.site'
-const sessionCookie = '__Host-chipstuttarna'
-const sessionLifetime = 14 * 86400000
 const linkLifetime = 60 * 60000
 const encoder = new TextEncoder()
 
@@ -42,22 +41,6 @@ function normalUsername(value) {
 function newPassword(value) {
   requireValue(typeof value === 'string' && value.length >= 12 && value.length <= 256,'Ange ett lösenord med 12–256 tecken.')
   return value
-}
-
-function cookieToken(request) {
-  return /(?:^|;\s*)__Host-chipstuttarna=([a-f0-9]{64})(?:;|$)/.exec(request.headers.get('cookie') ?? '')?.[1]
-}
-
-function sessionHeader(token = '', maxAge = 0) {
-  return {'Set-Cookie':sessionCookie+'='+token+'; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age='+maxAge}
-}
-
-async function accountSession(db, request) {
-  const token = cookieToken(request)
-  if (!token) return null
-  return db.prepare(`SELECT m.id, m.name, m.role, m.status FROM guild_sessions s
-    JOIN members m ON m.id=s.member_id WHERE s.token_hash=? AND s.expires_at>?`)
-    .bind(await digest(token),Date.now()).first()
 }
 
 async function rateLimit(db, request, area, account = '') {
@@ -177,7 +160,6 @@ async function completeAccountLink(env, request, body, purpose) {
 }
 
 async function authApi(request, env, path) {
-  if (request.method==='GET' && path==='/api/auth/config') return json({native:nativeAccounts(env),mode:(await env.DB.prepare('SELECT mode FROM registration_settings WHERE id=1').first())?.mode ?? 'open'})
   const body = await requestJson(request)
   const db = env.DB
   if (path==='/api/auth/logout') {
@@ -209,4 +191,4 @@ async function authApi(request, env, path) {
   return json({ok:true},200,sessionHeader(token,sessionLifetime/1000))
 }
 
-export { authApi, accountSession, nativeAccounts, rateLimit, createAccountLink, normalEmail }
+export { authApi, nativeAccounts, rateLimit, createAccountLink, normalEmail }

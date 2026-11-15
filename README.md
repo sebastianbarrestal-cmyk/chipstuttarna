@@ -88,3 +88,44 @@ Den exporterade källkoden innehåller varken den publicerade sidans databas ell
 5. Öppna repot på GitHub och kontrollera att `compose.yaml`, `Dockerfile`, `Caddyfile` och mappen `server` syns.
 
 Detta behåller repo-adressen och den tidigare versionen i Git-historiken. Ladda upp mallfilen `.env.example` och fyll i den riktiga `.env` på hemservern. Förvara databasen och säkerhetskopior utanför repot.
+
+## Logga in med Discord
+
+1. Skapa en applikation i [Discord Developer Portal](https://discord.com/developers/applications).
+2. Under **OAuth2 → Redirects**, lägg till guildsidans HTTPS-adress följd av `/api/auth/discord/callback`. För den publicerade sidan är det `https://chipstuttarna.sebastian-barrestal.chatgpt.site/api/auth/discord/callback`.
+3. Ange guildsidans HTTPS-adress som `GUILD_PUBLIC_ORIGIN` och konfigurera `DISCORD_CLIENT_ID` och `DISCORD_CLIENT_SECRET` som serverhemligheter. För Docker Compose fyller du i dem i `.env` och kör `docker compose up -d --build` igen.
+4. När guildens e-postinloggning och Discord-inställningarna är aktiva visas **Logga in med Discord**. En medlem måste först ha ett verifierat guildkonto. Första Discord-inloggningen matchar den verifierade e-postadressen och kopplar sedan Discord-kontots ID till guildkontot. Behörigheterna hämtas fortfarande från guildkontot.
+
+Discord-flödet behöver bara behörigheterna `identify` och `email`. Ingen bot behövs.
+
+## Discord-notiser och anmälningar
+
+Använd samma Discord-applikation som för inloggningen. Installera dess bot på er Discord-server med **Visa kanal** och **Skicka meddelanden** i den kanal där ni vill ha aviseringarna. Under **General Information** i Discord Developer Portal anger du **Interactions Endpoint URL** som guildsidans HTTPS-adress följd av `/api/discord/interactions`. På den publicerade sidan är adressen:
+
+```text
+https://chipstuttarna.sebastian-barrestal.chatgpt.site/api/discord/interactions
+```
+
+| Inställning | Användning |
+| --- | --- |
+| `DISCORD_BOT_TOKEN` | Applikationens bot-token från **Bot**. Förvara den som en serverhemlighet. |
+| `DISCORD_PUBLIC_KEY` | Applikationens publika nyckel från **General Information**. Konfigurera den innan du sparar endpointen i Discord. |
+| `DISCORD_GUILD_ID` | ID för Discord-servern där anmälningar tillåts. |
+| `DISCORD_CHANNEL_ID` | ID för den textkanal där aviseringar ska skickas. |
+| `DISCORD_JOB_SECRET` | Valfri serverhemlighet, minst 32 tecken. Krävs bara om en extern schemaläggare använder jobb-URL:en nedan. |
+
+Hemservern kontrollerar kön varje minut när boten är konfigurerad. På en egen Workers-installation gör `triggers.crons` i Wrangler-konfigurationen motsvarande jobb. För ChatGPT-hosting behöver en extern schemaläggare, till exempel ett cron-jobb på hemservern, köra `POST /api/discord/jobs` varje minut med `Authorization: Bearer <DISCORD_JOB_SECRET>`. Nya och inställda speltillfällen skickas också direkt från guildsidan när boten är konfigurerad. Kör bara schemaläggaren för den installation ni faktiskt använder.
+
+Påminnelser skickas upp till 30 minuter före start. Vid ett ändrat startdatum beräknas en påminnelse för den nya tiden. Öppna guildomröstningar aviseras med en länk. Omröstningar för särskilt inbjudna går enbart att se på guildsidan för användare med rätt åtkomst.
+
+I Discord trycker medlemmen **Kommer**, **Kanske** eller **Kan inte**. För de två första väljer medlemmen sin karaktär och, för dungeon eller raid, spelroll. Anmälan sparas i samma lista som på guildsidan. Medlemmar kopplar först sitt konto genom att logga in med Discord på guildsidan.
+
+## Konfigurera integrationerna från Admin
+
+Logga in som admin eller ägare och öppna **Admin → Integrationer**. Under **WoW Forever Armory** sparar du Battle.net-klientens ID och hemlighet. Du kan testa hämtning med för- och efternamnet på en EU-karaktär som visas i Armory.
+
+Under **Discord** sparar du appens ID, hemlighet, bottoken, publika nyckel, server-ID och kanal-ID. Kopiera sidans två adresser till respektive fält i Discord Developer Portal och installera boten på Discord-servern. **Testa bot och kanal** kontrollerar botens identitet och att den kan läsa kanalen. Discord-inloggningen behöver fortfarande guildens verifieringsmejl. Testa OAuth-inloggningen och skicka en riktig avisering från ett nytt speltillfälle när boten är installerad.
+
+Värden som sparas i Admin går före motsvarande miljövariabler. Tomma fält behåller nuvarande värde. Välj **Avstängd** om du vill pausa integrationen även när nycklar redan finns i servermiljön. Armory kan då fortfarande prova den offentliga profilen. På hemservern börjar nya Discord-inställningar användas av påminnelserna inom en minut. `DISCORD_JOB_SECRET` hanteras fortsatt på servern för den externa schemaläggaren.
+
+Inställningarna är krypterade i databasen med en nyckel härledd från `GUILD_IDENTITY_KEY`. Behåll den nyckeln vid uppdateringar och när en databas flyttas eller återställs. Hemligheterna visas aldrig i Admin eller dess ändringshistorik.
